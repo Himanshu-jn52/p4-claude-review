@@ -1,0 +1,14 @@
+{
+  "name": "p4-code-review",
+  "owner": {
+    "name": "Himanshu Jain",
+    "email": "himanjn52@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "p4-code-review",
+      "source": ".",
+      "description": "Automated code review for Perforce changelists using multiple specialized agents with confidence-based scoring, powered by the p4mcp tools"
+    }
+  ]
+}
