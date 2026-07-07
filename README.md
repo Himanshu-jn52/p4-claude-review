@@ -50,7 +50,7 @@ Examples:
 This repo is its own plugin marketplace. Add it, then install the plugin:
 
 ```
-/plugin marketplace add Himanshu-jn52/p4-claude-review
+/plugin marketplace add Himanshu-jn52/p4-code-review
 /plugin install p4-code-review@p4-code-review
 ```
 
