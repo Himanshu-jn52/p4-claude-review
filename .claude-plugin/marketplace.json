@@ -8,7 +8,7 @@
     {
       "name": "p4-code-review",
       "source": ".",
-      "description": "Automated code review for Perforce changelists using multiple specialized agents with confidence-based scoring, powered by the p4mcp tools"
+      "description": "P4 Code Review (Swarm) using multiple specialized agents with confidence-based scoring, powered by the p4mcp tools"
     }
   ]
 }

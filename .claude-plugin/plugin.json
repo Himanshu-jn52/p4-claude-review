@@ -1,6 +1,6 @@
 {
   "name": "p4-code-review",
-  "description": "Automated code review for Perforce changelists using multiple specialized agents with confidence-based scoring, powered by the p4mcp tools",
+  "description": "P4 Code Review (Swarm) using multiple specialized agents with confidence-based scoring, powered by the p4mcp tools",
   "version": "1.0.0",
   "author": {
     "name": "Himanshu Jain",

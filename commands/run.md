@@ -1,11 +1,11 @@
 ---
 allowed-tools: mcp__p4mcp__query_changelists, mcp__p4mcp__query_files, mcp__p4mcp__query_reviews, mcp__p4mcp__modify_reviews
-description: Code review a Perforce changelist
+description: Code review a Perforce Swarm review
 ---
 
-Provide a code review for the given Perforce changelist.
+Provide a P4 Code Review (Swarm) for the given review.
 
-`$ARGUMENTS` is the changelist number to review, optionally followed by `--comment`.
+`$ARGUMENTS` is the Swarm review ID to review, optionally followed by `--comment`.
 Example: `/p4-code-review:run 2095` or `/p4-code-review:run 2095 --comment`.
 
 **Server name is a placeholder — resolve it first.** Throughout this document, tools are
@@ -31,6 +31,19 @@ Before doing anything else, resolve the real prefix:
 - All tools are functional and will work without error. Do not test tools or make exploratory calls. Make sure this is clear to every subagent that is launched.
 - Only call a tool if it is required to complete the task. Every tool call should have a clear purpose.
 
+**Resolving the changelist from the review.** Everything downstream (diffing, CLAUDE.md
+lookup, comment posting) operates on a changelist number, but the input to this command is
+a review ID. Resolve the changelist first, before launching any other agent:
+- Call `mcp__p4mcp__query_reviews` (action `get`, `review_id` = `$ARGUMENTS`'s review ID) to
+  fetch the review's metadata, including its `changes` field (the changelist(s) associated
+  with this review) and its title/description.
+- If the review does not exist, stop and tell the user.
+- A review's `changes` field can list more than one changelist across iterations (e.g. a
+  shelved changelist updated multiple times). Use the LAST (most recent) entry — it reflects
+  the current state of the review — as "the changelist" referenced everywhere below.
+- Keep the review ID (already known — no need to re-derive it later via keyword search) and
+  the resolved changelist number on hand; pass both to every subagent that needs them.
+
 **Diffing a changelist (share this with every reviewing subagent):**
 - Get the changelist metadata with `mcp__p4mcp__query_changelists` (action `get`). This returns the file list, each file's `action` (add/edit/delete/branch/integrate) and its `rev`.
 - For a **submitted, edited** file, get the diff with `mcp__p4mcp__query_files` (action `diff`) comparing `//path#<rev-1>` against `//path#<rev>`.
@@ -40,10 +53,10 @@ Before doing anything else, resolve the real prefix:
 To do this, follow these steps precisely:
 
 1. Launch a haiku agent to check if any of the following are true:
-   - The changelist does not exist, or is empty (no files).
-   - The changelist is already committed and its associated Swarm review is `approved`, `rejected`, or `archived` (a finished review that no longer needs input). Find the associated review with `mcp__p4mcp__query_reviews` (action `list`, `keywords` = the changelist number, `keywords_fields` = `["changes"]`), then read its state via action `get`.
+   - The resolved changelist is empty (no files).
+   - The review is already `approved`, `rejected`, or `archived` (a finished review that no longer needs input) — this was already fetched during changelist resolution above; no need to re-fetch.
    - The changelist does not need code review (e.g. automated/bot submit, generated data, a trivial change that is obviously correct).
-   - Claude has already commented on the associated Swarm review (check `mcp__p4mcp__query_reviews` action `comments` for comments authored by the current user / Claude).
+   - Claude has already commented on the review (check `mcp__p4mcp__query_reviews` action `comments` for comments authored by the current user / Claude).
 
    If any condition is true, stop and do not proceed.
 
@@ -92,16 +105,16 @@ To do this, follow these steps precisely:
 
    If `--comment` argument was NOT provided, stop here. Do not post any Swarm comments.
 
-   Before posting anything, resolve the Swarm review for this changelist with `mcp__p4mcp__query_reviews` (action `list`, `keywords` = the changelist number, `keywords_fields` = `["changes"]`). If NO review exists, do not create one — print the findings to the terminal, tell the user no Swarm review is associated with this changelist, and stop.
+   The review ID is already known (it was the command's input, resolved to a changelist earlier) — no need to re-resolve it.
 
-   If `--comment` argument IS provided, a review exists, and NO issues were found, post a summary comment using `mcp__p4mcp__modify_reviews` (action `add_comment`, `review_id` = the review, `body` = the summary) and stop.
+   If `--comment` argument IS provided and NO issues were found, post a summary comment using `mcp__p4mcp__modify_reviews` (action `add_comment`, `review_id` = the input review ID, `body` = the summary) and stop.
 
-   If `--comment` argument IS provided, a review exists, and issues were found, continue to step 8.
+   If `--comment` argument IS provided and issues were found, continue to step 8.
 
 8. Create a list of all comments that you plan on leaving. This is only for you to make sure you are comfortable with the comments. Do not post this list anywhere.
 
 9. Post inline comments for each issue using `mcp__p4mcp__modify_reviews` (action `add_comment`). For each comment set:
-   - `review_id`: the resolved review ID
+   - `review_id`: the input review ID
    - `body`: a brief description of the issue and the suggested fix
    - `comment_file_path`: the depot path of the file (e.g. `//depot/main/foo.cpp`)
    - `comment_right_line`: the line in the new revision the comment applies to (use `comment_left_line` instead when commenting on a removed line)

@@ -1,13 +1,14 @@
 # p4-code-review
 
-Automated code review for **Perforce changelists**, using multiple specialized Claude Code agents with
-confidence-based scoring. It drives the [`p4mcp-server`] tools and  Swarm reviews.
+**P4 Code Review (Swarm)**, using multiple specialized agents with confidence-based scoring.
+It drives the [`p4mcp-server`] tools and Swarm reviews.
 
 ## What it does
 
-Given a changelist number, the `/p4-code-review` command runs a multi-agent pipeline:
+Given a Swarm review ID, the `/p4-code-review` command runs a multi-agent pipeline:
 
-1. **Precheck** (haiku) — skip if the changelist is empty, already finished-reviewing, trivial/automated, or Claude has already commented on its Swarm review.
+0. **Resolve** — look up the review and take its most recent associated changelist as the one to review.
+1. **Precheck** (haiku) — skip if the changelist is empty, the review is already finished-reviewing, the change is trivial/automated, or Claude has already commented on the review.
 2. **Gather CLAUDE.md** (haiku) — collect depot paths of CLAUDE.md files that govern the changed files.
 3. **Summarize** (sonnet) — describe what the changelist does.
 4. **Review** (4 parallel agents) — 2 sonnet agents for CLAUDE.md compliance + 2 opus agents for bugs/logic/security, tuned for **high-signal-only** findings.
@@ -19,8 +20,8 @@ Given a changelist number, the `/p4-code-review` command runs a multi-agent pipe
 ## Usage
 
 ```
-/p4-code-review:run <changelist>            # review and print findings only
-/p4-code-review:run <changelist> --comment  # also post comments to the Swarm review
+/p4-code-review:run <review-id>            # review and print findings only
+/p4-code-review:run <review-id> --comment  # also post comments to the Swarm review
 ```
 
 Examples:
@@ -41,9 +42,7 @@ Examples:
   auto-approval only — under a different name the tools still work, they just prompt for
   permission. To silence those prompts, edit the `mcp__p4mcp__` prefixes in
   `commands/run.md` to match your server.
-- `--comment` mode requires a Helix Swarm review associated with the changelist, and
-  write permission on that review. If no review exists, the command prints findings and
-  stops rather than creating one.
+- `--comment` mode requires write permission on the review.
 
 ## Installation
 
